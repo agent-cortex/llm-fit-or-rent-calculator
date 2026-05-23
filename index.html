@@ -3,360 +3,1737 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LLM Fit-or-Rent Calculator</title>
+  <title>Local AI GPU VRAM Calculator</title>
+  
+  <!-- Premium Modern Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
   <style>
     :root {
-      --bg: #0b0f14;
-      --panel: #111821;
-      --panel-2: #151f2b;
-      --ink: #edf6ff;
-      --muted: #9fb0c3;
-      --faint: #65758a;
-      --line: #243142;
-      --accent: #7cf7c8;
-      --accent-2: #89b4ff;
-      --warn: #ffd166;
-      --bad: #ff6b6b;
-      --good: #52d273;
-      --shadow: 0 24px 70px rgba(0,0,0,.36);
+      /* Theme Palettes - Cyberpunk/AI Inspired */
+      --bg: #070913;
+      --bg-gradient: radial-gradient(circle at 10% 20%, rgba(16, 24, 48, 1) 0%, rgba(7, 9, 19, 1) 80%);
+      --panel: rgba(13, 17, 33, 0.7);
+      --panel-hover: rgba(20, 26, 50, 0.85);
+      --panel-border: rgba(255, 255, 255, 0.07);
+      --panel-border-focus: rgba(0, 242, 254, 0.4);
+      
+      --ink: #f1f5f9;
+      --muted: #94a3b8;
+      --faint: #64748b;
+      --line: rgba(255, 255, 255, 0.08);
+      
+      /* Vibrant Glow Accents */
+      --cyan: #00f2fe;
+      --purple: #9b51e0;
+      --magenta: #f857a6;
+      --green: #10b981;
+      --orange: #f59e0b;
+      --red: #f43f5e;
+      --blue: #3b82f6;
+      
+      /* Specific Memory Gradients */
+      --weights-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+      --kv-gradient: linear-gradient(135deg, #a855f7 0%, #6366f1 100%);
+      --overhead-gradient: linear-gradient(135deg, #14b8a6 0%, #059669 100%);
+      
+      --shadow: 0 16px 36px rgba(0, 0, 0, 0.5), 0 0 1px rgba(255, 255, 255, 0.1);
+      --shadow-glow: 0 0 25px rgba(0, 242, 254, 0.15);
+      
+      font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
       color-scheme: dark;
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    * { box-sizing: border-box; }
-    html { min-height: 100%; background: var(--bg); }
+    * { box-sizing: border-box; margin: 0; padding: 0; transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s; }
+    
+    html { min-height: 100%; background: var(--bg); scroll-behavior: smooth; }
+    
     body {
-      margin: 0;
-      min-height: 100vh;
       color: var(--ink);
-      background:
-        radial-gradient(circle at 15% 10%, rgba(124, 247, 200, .12), transparent 28rem),
-        radial-gradient(circle at 88% 18%, rgba(137, 180, 255, .12), transparent 32rem),
-        linear-gradient(180deg, #0a0f15 0%, #0b0f14 55%, #070a0e 100%);
+      background: var(--bg-gradient);
+      font-size: 15px;
+      line-height: 1.5;
+      padding-bottom: 80px; /* Space for mobile sticky footer */
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      letter-spacing: -0.02em;
     }
 
     button, input, select { font: inherit; }
 
-    .shell { width: min(1220px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 44px; }
-    .topbar { display: flex; justify-content: space-between; gap: 18px; align-items: flex-start; margin-bottom: 22px; }
-    .eyebrow { color: var(--accent); font-size: 12px; letter-spacing: .18em; text-transform: uppercase; font-weight: 800; }
-    h1 { margin: 8px 0 8px; font-size: clamp(34px, 5vw, 70px); line-height: .93; letter-spacing: -.07em; max-width: 900px; }
-    .lede { margin: 0; color: var(--muted); max-width: 760px; font-size: 16px; line-height: 1.6; }
-    .source { text-align: right; color: var(--faint); font-size: 13px; max-width: 280px; line-height: 1.5; }
-    .source a { color: var(--accent-2); text-decoration: none; }
-
-    .grid { display: grid; grid-template-columns: 410px 1fr; gap: 18px; align-items: start; }
-    .card { background: color-mix(in srgb, var(--panel) 94%, transparent); border: 1px solid var(--line); border-radius: 24px; box-shadow: var(--shadow); }
-    .card-header { padding: 20px 20px 0; }
-    .card-title { margin: 0; font-size: 15px; letter-spacing: -.01em; }
-    .card-sub { margin: 6px 0 0; color: var(--muted); font-size: 13px; line-height: 1.45; }
-    .inputs { padding: 18px 20px 20px; display: grid; gap: 14px; }
-    .field { display: grid; gap: 7px; }
-    .field label { display: flex; justify-content: space-between; gap: 8px; color: var(--muted); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
-    .field label span:last-child { color: var(--faint); font-weight: 600; text-transform: none; letter-spacing: 0; }
-    .control-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    input, select {
-      width: 100%; min-height: 44px; color: var(--ink); background: #0b1119; border: 1px solid #263548; border-radius: 14px; padding: 10px 12px; outline: none;
+    /* Layout Shell */
+    .shell {
+      width: min(1280px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0;
     }
-    input:focus, select:focus { border-color: color-mix(in srgb, var(--accent) 70%, #fff 10%); box-shadow: 0 0 0 4px rgba(124,247,200,.1); }
-    .btnrow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
-    .btn { border: 0; border-radius: 14px; min-height: 44px; padding: 10px 14px; color: #07100d; background: var(--accent); font-weight: 850; cursor: pointer; }
-    .btn.secondary { color: var(--ink); background: #182434; border: 1px solid var(--line); }
 
-    .output { display: grid; gap: 18px; }
-    .verdict { padding: 22px; display: grid; grid-template-columns: 1.35fr .9fr; gap: 20px; align-items: stretch; }
-    .verdict-main { display: grid; align-content: center; gap: 10px; min-height: 170px; }
-    .status { display: inline-flex; width: max-content; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; font-size: 12px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-    .status.fit { background: rgba(82,210,115,.14); color: var(--good); }
-    .status.tight { background: rgba(255,209,102,.14); color: var(--warn); }
-    .status.nope { background: rgba(255,107,107,.14); color: var(--bad); }
-    .verdict h2 { margin: 0; font-size: clamp(30px, 5vw, 58px); letter-spacing: -.06em; line-height: .95; }
-    .verdict p { margin: 0; color: var(--muted); line-height: 1.55; }
-    .gauge { background: #0b1119; border: 1px solid var(--line); border-radius: 20px; padding: 16px; display: grid; align-content: center; gap: 12px; }
-    .ring { --p: 0%; aspect-ratio: 1; border-radius: 50%; background: conic-gradient(var(--accent) var(--p), #223044 0); display: grid; place-items: center; width: min(100%, 190px); margin: 0 auto; }
-    .ring::before { content: attr(data-label); width: 72%; aspect-ratio: 1; border-radius: 50%; background: #0b1119; border: 1px solid var(--line); display: grid; place-items: center; text-align: center; white-space: pre; font-weight: 900; font-size: 22px; letter-spacing: -.04em; }
-    .gauge small { color: var(--muted); text-align: center; line-height: 1.45; }
+    /* Top bar / Logo section */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      margin-bottom: 32px;
+      border-bottom: 1px solid var(--panel-border);
+      padding-bottom: 24px;
+    }
+    
+    .logo-container {
+      display: flex;
+      flex-direction: column;
+    }
 
-    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-    .metric { padding: 16px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 20px; min-height: 116px; }
-    .metric .label { color: var(--muted); font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
-    .metric .value { margin-top: 12px; font-size: clamp(24px, 3vw, 38px); line-height: 1; font-weight: 920; letter-spacing: -.06em; }
-    .metric .hint { margin-top: 9px; color: var(--faint); font-size: 12px; line-height: 1.4; }
+    .eyebrow {
+      color: var(--cyan);
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      font-weight: 900;
+      margin-bottom: 4px;
+      text-shadow: 0 0 8px rgba(0, 242, 254, 0.4);
+    }
 
-    .bars { padding: 20px; }
-    .bar-grid { display: grid; gap: 14px; }
-    .bar-row { display: grid; gap: 7px; }
-    .bar-top { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 13px; }
-    .bar { height: 13px; background: #0b1119; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
-    .bar > span { display: block; height: 100%; width: var(--w); background: linear-gradient(90deg, var(--accent), var(--accent-2)); border-radius: inherit; }
+    h1 {
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.1;
+      background: linear-gradient(135deg, #fff 40%, var(--cyan) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
 
-    .formula { padding: 18px 20px 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-    .formula code { display: block; height: 100%; white-space: normal; color: #d7e8ff; background: #0b1119; border: 1px solid var(--line); border-radius: 16px; padding: 14px; font-size: 13px; line-height: 1.55; }
-    .formula b { color: var(--accent); }
+    .lede {
+      color: var(--muted);
+      max-width: 780px;
+      font-size: 15px;
+      line-height: 1.6;
+    }
 
-    .rent { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 20px 20px; }
-    .rent-box { background: #0b1119; border: 1px solid var(--line); border-radius: 18px; padding: 15px; }
-    .rent-box strong { display: block; font-size: 22px; letter-spacing: -.04em; margin-bottom: 4px; }
-    .rent-box span { color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .meta-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
 
-    .foot { margin-top: 18px; color: var(--faint); font-size: 12px; line-height: 1.6; }
-    .foot strong { color: var(--muted); }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--panel-border);
+      color: var(--muted);
+    }
+    .badge.cyan {
+      background: rgba(0, 242, 254, 0.08);
+      border-color: rgba(0, 242, 254, 0.2);
+      color: var(--cyan);
+    }
 
+    .github-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--panel-border);
+      color: var(--ink);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+      align-self: flex-start;
+    }
+    .github-link:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--cyan);
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.15);
+      transform: translateY(-1px);
+    }
+    .github-link svg {
+      color: var(--muted);
+      transition: color 0.2s;
+    }
+    .github-link:hover svg {
+      color: var(--cyan);
+    }
+
+    /* Main Grid Structure */
+    .grid {
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    /* Card Panels */
+    .card {
+      background: var(--panel);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--panel-border);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .card:hover {
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .card-header {
+      padding: 24px 24px 0;
+    }
+    
+    .card-title {
+      font-size: 18px;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700;
+      color: var(--ink);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .card-title-icon {
+      color: var(--cyan);
+      font-size: 16px;
+    }
+
+    .card-sub {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .inputs-body {
+      padding: 20px 24px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Input Fields styling */
+    .field-group {
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+    }
+    .field-group:first-child {
+      border-top: none;
+      padding-top: 0;
+    }
+
+    .field-group-title {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .field-group-title span {
+      font-size: 11px;
+      color: var(--faint);
+      text-transform: none;
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    .field-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .field-label {
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+
+    .field-value {
+      color: var(--cyan);
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+    }
+
+    .control-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    /* Standard Select and Inputs */
+    select, input[type="number"], input[type="text"] {
+      width: 100%;
+      min-height: 42px;
+      color: var(--ink);
+      background: #090c17;
+      border: 1px solid #1e2942;
+      border-radius: 12px;
+      padding: 8px 14px;
+      outline: none;
+      font-size: 14px;
+    }
+    select:focus, input[type="number"]:focus {
+      border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(0, 242, 254, 0.15);
+    }
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      background-size: 16px;
+      padding-right: 36px;
+    }
+
+    /* Styled Range Sliders */
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #11172a;
+      border-radius: 99px;
+      outline: none;
+      margin: 10px 0;
+    }
+
+    input[type="range"]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 6px;
+      cursor: pointer;
+      border-radius: 99px;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--cyan);
+      border: 2px solid #070913;
+      box-shadow: 0 0 8px var(--cyan);
+      cursor: pointer;
+      margin-top: -6px;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.25);
+      box-shadow: 0 0 12px var(--cyan);
+    }
+
+    /* Outputs Side */
+    .outputs-container {
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    /* Verdict Card */
+    .verdict-card {
+      display: grid;
+      grid-template-columns: 1.4fr 1fr;
+      gap: 24px;
+      padding: 24px;
+      align-items: center;
+      background: linear-gradient(135deg, rgba(16, 24, 48, 0.8) 0%, rgba(13, 17, 33, 0.7) 100%);
+    }
+
+    .verdict-main {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 99px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      width: max-content;
+    }
+    .status-badge.fit {
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--green);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.08);
+    }
+    .status-badge.tight {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--orange);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.08);
+    }
+    .status-badge.nope {
+      background: rgba(244, 63, 94, 0.12);
+      color: var(--red);
+      border: 1px solid rgba(244, 63, 94, 0.25);
+      box-shadow: 0 0 15px rgba(244, 63, 94, 0.08);
+    }
+
+    .verdict-title {
+      font-size: clamp(22px, 3.5vw, 32px);
+      line-height: 1.15;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .verdict-desc {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* Gauge / Ring Indicator */
+    .gauge-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+
+    .gauge-ring {
+      --p: 0%;
+      --color: var(--cyan);
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: conic-gradient(var(--color) var(--p), #1e293b 0);
+      display: grid;
+      place-items: center;
+      position: relative;
+      box-shadow: inset 0 0 15px rgba(0,0,0,0.4);
+    }
+    .gauge-ring::before {
+      content: attr(data-label);
+      width: 82%;
+      height: 82%;
+      border-radius: 50%;
+      background: #0c0f1d;
+      border: 1px solid var(--panel-border);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      white-space: pre-line;
+      font-weight: 800;
+      font-size: 16px;
+      line-height: 1.2;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .gauge-sub {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    /* Interactive Segmented VRAM Bar */
+    .vram-bar-panel {
+      padding: 24px;
+    }
+
+    .allocation-bar-container {
+      margin: 18px 0;
+    }
+
+    .allocation-bar {
+      height: 28px;
+      background: #090c16;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      position: relative;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.6);
+    }
+    
+    .allocation-segment {
+      height: 100%;
+      position: relative;
+      background-size: 30px 30px;
+      transition: width 0.3s ease;
+      cursor: pointer;
+    }
+    .allocation-segment::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 50%, rgba(0,0,0,0.2) 100%);
+    }
+    .allocation-segment:hover::before {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 34px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #000;
+      border: 1px solid var(--panel-border);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      white-space: nowrap;
+      color: #fff;
+      font-weight: 600;
+      z-index: 10;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      pointer-events: none;
+    }
+    
+    .allocation-segment.weights {
+      background-image: var(--weights-gradient);
+    }
+    .allocation-segment.kv {
+      background-image: var(--kv-gradient);
+    }
+    .allocation-segment.overhead {
+      background-image: var(--overhead-gradient);
+    }
+    .allocation-segment.vram-line {
+      width: 2px;
+      background: #fff;
+      position: absolute;
+      top: 0; bottom: 0;
+      z-index: 2;
+      box-shadow: 0 0 8px #fff;
+      transition: left 0.3s ease;
+    }
+    .allocation-overflow {
+      background: repeating-linear-gradient(45deg, var(--red), var(--red) 10px, #a21f35 10px, #a21f35 20px);
+      height: 100%;
+      flex-grow: 1;
+      opacity: 0.85;
+      transition: width 0.3s ease;
+    }
+
+    .legend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+    }
+    .legend-color.weights { background: #00f2fe; }
+    .legend-color.kv { background: #a855f7; }
+    .legend-color.overhead { background: #14b8a6; }
+    .legend-color.limit { background: #fff; border: 1px solid #00f2fe; }
+    .legend-color.overflow { background: var(--red); }
+
+    .legend-label {
+      color: var(--muted);
+    }
+    .legend-value {
+      font-weight: 700;
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Core Metrics Cards */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .metric-card {
+      background: var(--panel-2);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 110px;
+    }
+    
+    .metric-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+    }
+
+    .metric-value {
+      font-size: clamp(20px, 2.5vw, 26px);
+      font-weight: 800;
+      color: var(--ink);
+      font-family: 'Outfit', sans-serif;
+      margin: 8px 0 4px;
+      line-height: 1.1;
+    }
+
+    .metric-hint {
+      font-size: 11px;
+      color: var(--faint);
+      line-height: 1.35;
+    }
+
+    /* GPU Compatibility recommender */
+    .gpu-panel {
+      padding: 24px;
+    }
+
+    .gpu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .gpu-card {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      position: relative;
+    }
+    .gpu-card.recommended {
+      border-color: rgba(16, 185, 129, 0.3);
+      background: rgba(16, 185, 129, 0.03);
+    }
+    .gpu-card.recommended::after {
+      content: 'Fits';
+      position: absolute;
+      top: 14px; right: 14px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--green);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .gpu-card.barely {
+      border-color: rgba(245, 158, 11, 0.3);
+      background: rgba(245, 158, 11, 0.03);
+    }
+    .gpu-card.barely::after {
+      content: 'Tight';
+      position: absolute;
+      top: 14px; right: 14px;
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--orange);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .gpu-card.insufficient {
+      opacity: 0.45;
+    }
+    .gpu-card.insufficient::after {
+      content: 'Nope';
+      position: absolute;
+      top: 14px; right: 14px;
+      background: rgba(244, 63, 94, 0.15);
+      color: var(--red);
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 99px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .gpu-name {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--ink);
+      font-family: 'Outfit', sans-serif;
+      padding-right: 50px;
+    }
+
+    .gpu-vram {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--cyan);
+      font-weight: 600;
+    }
+
+    .gpu-price-tag {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: auto;
+    }
+
+    /* Rent Economics upgraded */
+    .rent-panel {
+      padding: 24px;
+    }
+    
+    .rent-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .rent-box {
+      background: rgba(0, 0, 0, 0.2);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .rent-box strong {
+      font-size: 22px;
+      color: var(--ink);
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .rent-box span {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    /* Formulas Details Accordion */
+    .formulas-card {
+      background: transparent;
+      border: 1px solid var(--panel-border);
+    }
+    
+    .formulas-header {
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+    }
+    .formulas-header:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .formulas-body {
+      padding: 0 24px 24px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .formulas-body code {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      background: #05070f;
+      border: 1px solid var(--panel-border);
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #93c5fd;
+    }
+    .formulas-body code strong {
+      color: var(--cyan);
+      display: block;
+      margin-bottom: 6px;
+      font-family: 'Outfit', sans-serif;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+
+    /* Custom Buttons styling */
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .btn {
+      border: none;
+      border-radius: 12px;
+      min-height: 42px;
+      padding: 10px 16px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--cyan) 0%, #00b4d8 100%);
+      color: #040814;
+      box-shadow: 0 4px 15px rgba(0, 242, 254, 0.2);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(0, 242, 254, 0.3);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--panel-border);
+      color: var(--ink);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--muted);
+    }
+
+    /* Disclaimer & footer */
+    .footer {
+      margin-top: 32px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--faint);
+      line-height: 1.6;
+    }
+
+    .footer a {
+      color: var(--cyan);
+      text-decoration: none;
+    }
+    .footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Mobile Sticky Bottom Status Bar Widget */
+    .mobile-status-bar {
+      position: fixed;
+      bottom: 16px;
+      left: 16px; right: 16px;
+      background: rgba(13, 17, 33, 0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 242, 254, 0.25);
+      border-radius: 16px;
+      padding: 12px 16px;
+      z-index: 100;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6), 0 0 15px rgba(0, 242, 254, 0.15);
+      display: none; /* Desktop hidden */
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .mobile-status-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .mobile-status-model {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .mobile-status-details {
+      font-family: 'Outfit', sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mobile-status-badge {
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 2px 8px;
+      border-radius: 99px;
+    }
+
+    .mobile-status-btn {
+      background: var(--cyan);
+      color: #000;
+      border: none;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 6px 12px;
+      border-radius: 8px;
+      text-transform: uppercase;
+      cursor: pointer;
+    }
+
+    /* Keyframes */
+    @keyframes slideUp {
+      from { transform: translateY(120%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    /* MEDIA QUERIES FOR RESPONSIVENESS */
     @media (max-width: 980px) {
-      .topbar, .grid, .verdict, .formula, .rent { grid-template-columns: 1fr; }
-      .topbar { display: grid; }
-      .source { text-align: left; }
-      .metrics { grid-template-columns: 1fr 1fr; }
+      .grid {
+        grid-template-columns: 1fr;
+      }
+      .header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+      }
+      .mobile-status-bar {
+        display: flex; /* Shown on tablet/mobile */
+      }
+      body {
+        padding-bottom: 96px; /* Additional space for sticky widget */
+      }
     }
-    @media (max-width: 560px) {
-      .shell { width: min(100% - 22px, 1220px); padding-top: 18px; }
-      .card { border-radius: 18px; }
-      .metrics, .control-row, .btnrow { grid-template-columns: 1fr; }
-      .verdict { padding: 16px; }
-      h1 { font-size: 38px; }
+
+    @media (max-width: 640px) {
+      .shell {
+        width: calc(100% - 24px);
+        padding: 20px 0;
+      }
+      .verdict-card {
+        grid-template-columns: 1fr;
+      }
+      .gauge-wrapper {
+        width: 100%;
+      }
+      .metrics-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      .formulas-body {
+        grid-template-columns: 1fr;
+      }
+      .rent-grid {
+        grid-template-columns: 1fr;
+      }
+      .control-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
     }
   </style>
 </head>
 <body>
-  <main class="shell">
-    <section class="topbar">
-      <div>
-        <div class="eyebrow">Static calculator · no backend</div>
-        <h1>LLM fit‑or‑rent calculator</h1>
-        <p class="lede">Estimate whether a model fits your GPU, how much VRAM the weights + KV cache + overhead need, and whether renting a beefier GPU is the sane move.</p>
-      </div>
-      <p class="source">Based on adidshaft’s “Quick Estimator for LLM Fit‑or‑Rent Decisions” thread. Formula-first, spec-sheet-second.</p>
-    </section>
 
-    <section class="grid">
+  <main class="shell">
+    
+    <!-- HEADER -->
+    <header class="header">
+      <div class="logo-container">
+        <div class="eyebrow">Local LLM Performance Architect</div>
+        <h1>Local AI VRAM Calculator</h1>
+        <p class="lede">
+          Accurately calculate weight and KV cache footprint for local AI runs. Compare model fitting across GGUF & EXL2 quantizations, view matching local GPU setups, and check renting economics.
+        </p>
+        <div class="meta-badges">
+          <span class="badge cyan">Grouped-Query Attention (GQA) Supported</span>
+          <span class="badge">Static client-side app</span>
+          <span class="badge">Quantization-aware</span>
+        </div>
+      </div>
+      
+      <a href="https://github.com/agent-cortex/llm-fit-or-rent-calculator" target="_blank" class="github-link" title="View Source on GitHub">
+        <svg height="18" width="18" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+        </svg>
+        <span>GitHub</span>
+      </a>
+    </header>
+
+    <!-- CONTENT GRID -->
+    <div class="grid">
+      
+      <!-- INPUTS COLUMN -->
       <aside class="card">
         <div class="card-header">
-          <h2 class="card-title">Inputs</h2>
-          <p class="card-sub">Pick a preset, then tune the actual architecture if you know it. KV cache is the hidden killer.</p>
+          <h2 class="card-title">
+            <span class="card-title-icon">⚙️</span> Config Engine
+          </h2>
+          <p class="card-sub">Choose a base model or set up a custom architectural profile below.</p>
         </div>
-        <div class="inputs">
-          <div class="field">
-            <label for="modelPreset">Model preset <span>params / layers / hidden</span></label>
-            <select id="modelPreset">
-              <option value="custom">Custom</option>
-              <option value="llama7b">7B class · 32L / 4096H</option>
-              <option value="llama13b">13B class · 40L / 5120H</option>
-              <option value="llama34b">34B class · 48L / 8192H</option>
-              <option value="llama70b">70B class · 80L / 8192H</option>
-            </select>
+        
+        <div class="inputs-body">
+          
+          <!-- Section 1: Model profile -->
+          <div class="field-group">
+            <div class="field-group-title">Model Profile</div>
+            
+            <div class="field">
+              <div class="field-header">
+                <span class="field-label">Model Preset</span>
+              </div>
+              <select id="modelPreset">
+                <option value="llama3_8b">Llama 3 8B (GQA 4:1)</option>
+                <option value="llama3_70b">Llama 3 70B (GQA 8:1)</option>
+                <option value="mistral7b">Mistral 7B v0.3 (GQA 4:1)</option>
+                <option value="gemma2_9b">Gemma 2 9B (GQA 2:1)</option>
+                <option value="phi3_mini">Phi 3 Mini 3.8B (MHA 1:1)</option>
+                <option value="deepseek_6b">DeepSeek Coder 6.7B (GQA 4:1)</option>
+                <option value="custom">Custom Configuration</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <div class="field-header">
+                <span class="field-label">Model Size</span>
+                <span class="field-value"><span id="params-val">8</span>B</span>
+              </div>
+              <input id="params" type="range" min="0.5" max="120" step="0.1" value="8">
+            </div>
+
+            <div class="field">
+              <div class="field-header">
+                <span class="field-label">Model Quantization</span>
+              </div>
+              <select id="precision">
+                <option value="16">FP16 / BF16 (Unquantized) · 16.0 bits</option>
+                <option value="8.0">FP8 / INT8 · 8.0 bits</option>
+                <option value="8.5">GGUF Q8_0 · ~8.5 bits</option>
+                <option value="6.6">GGUF Q6_K · ~6.6 bits</option>
+                <option value="5.5">GGUF Q5_K_M · ~5.5 bits</option>
+                <option value="4.8" selected>GGUF Q4_K_M (Highly Recommended) · ~4.8 bits</option>
+                <option value="3.8">GGUF Q3_K_M · ~3.8 bits</option>
+                <option value="4.3">AWQ / GPTQ 4-bit · ~4.3 bits</option>
+                <option value="4.0">EXL2 4.0 bpw · 4.0 bits</option>
+                <option value="3.0">EXL2 3.0 bpw · 3.0 bits</option>
+                <option value="2.0">EXL2 2.0 bpw · 2.0 bits</option>
+              </select>
+            </div>
           </div>
 
-          <div class="control-row">
-            <div class="field"><label for="params">Parameters <span>B</span></label><input id="params" type="number" step="0.1" min="0.1" value="13"></div>
-            <div class="field"><label for="precision">Weight precision <span>bytes</span></label><select id="precision"><option value="2">FP16/BF16 · 2</option><option value="1">INT8/FP8 · 1</option><option value="0.5">INT4 · 0.5</option></select></div>
+          <!-- Section 2: Architecture Details -->
+          <div class="field-group" id="architectureGroup">
+            <div class="field-group-title">
+              Attention Architecture 
+              <span>Auto-filled by preset</span>
+            </div>
+            
+            <div class="control-row">
+              <div class="field">
+                <div class="field-header">
+                  <span class="field-label">Layers (L)</span>
+                  <span class="field-value" id="layers-val">32</span>
+                </div>
+                <input id="layers" type="range" min="8" max="128" step="1" value="32">
+              </div>
+              
+              <div class="field">
+                <div class="field-header">
+                  <span class="field-label">Hidden (H)</span>
+                  <span class="field-value" id="hidden-val">4096</span>
+                </div>
+                <input id="hidden" type="range" min="512" max="16384" step="64" value="4096">
+              </div>
+            </div>
+
+            <div class="control-row">
+              <div class="field">
+                <div class="field-header">
+                  <span class="field-label">Query Heads</span>
+                  <span class="field-value" id="qheads-val">32</span>
+                </div>
+                <input id="qHeads" type="range" min="1" max="128" step="1" value="32">
+              </div>
+              
+              <div class="field">
+                <div class="field-header">
+                  <span class="field-label">KV Heads</span>
+                  <span class="field-value" id="kvheads-val">8</span>
+                </div>
+                <input id="kvHeads" type="range" min="1" max="128" step="1" value="8">
+              </div>
+            </div>
           </div>
 
-          <div class="control-row">
-            <div class="field"><label for="layers">Layers <span>L</span></label><input id="layers" type="number" step="1" min="1" value="40"></div>
-            <div class="field"><label for="hidden">Hidden size <span>H</span></label><input id="hidden" type="number" step="1" min="1" value="5120"></div>
+          <!-- Section 3: Context & Runtime -->
+          <div class="field-group">
+            <div class="field-group-title">Context & Runtime</div>
+
+            <div class="field">
+              <div class="field-header">
+                <span class="field-label">Context Window (Tokens)</span>
+                <span class="field-value" id="tokens-val">8,192</span>
+              </div>
+              <input id="tokens" type="range" min="512" max="131072" step="512" value="8192">
+            </div>
+
+            <div class="control-row">
+              <div class="field">
+                <div class="field-header">
+                  <span class="field-label">KV Cache Quant</span>
+                </div>
+                <select id="kvBytes">
+                  <option value="2" selected>FP16 (2.0 bytes)</option>
+                  <option value="1">INT8 / FP8 (1.0 byte)</option>
+                  <option value="0.5">INT4 (0.5 bytes)</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <div class="field-header">
+                  <span class="field-label">Engine Overhead</span>
+                  <span class="field-value"><span id="overhead-val">1.5</span> GB</span>
+                </div>
+                <input id="overhead" type="range" min="0.25" max="6" step="0.25" value="1.5">
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="field-header">
+                <span class="field-label">Your Available VRAM</span>
+                <span class="field-value"><span id="vram-val">16</span> GB</span>
+              </div>
+              <input id="vram" type="range" min="4" max="192" step="1" value="16">
+            </div>
           </div>
 
-          <div class="control-row">
-            <div class="field"><label for="tokens">Context window <span>tokens</span></label><input id="tokens" type="number" step="128" min="128" value="8192"></div>
-            <div class="field"><label for="kvBytes">KV precision <span>bytes</span></label><select id="kvBytes"><option value="2">FP16/BF16 · 2</option><option value="1">INT8/FP8 · 1</option><option value="0.5">INT4 · 0.5</option></select></div>
+          <!-- Section 4: Rent Economics -->
+          <div class="field-group">
+            <div class="field-group-title">Economics Configuration</div>
+            
+            <div class="control-row">
+              <div class="field">
+                <div class="field-header">
+                  <span class="field-label">Tokens/Sec</span>
+                  <span class="field-value" id="tps-val">25</span>
+                </div>
+                <input id="tps" type="range" min="1" max="120" step="1" value="25">
+              </div>
+              
+              <div class="field">
+                <div class="field-header">
+                  <span class="field-label">Output/Job</span>
+                  <span class="field-value" id="outTokens-val">2000</span>
+                </div>
+                <input id="outTokens" type="range" min="100" max="8000" step="100" value="2000">
+              </div>
+            </div>
+
+            <div class="control-row">
+              <div class="field">
+                <div class="field-header">
+                  <span class="field-label">Cloud Price ($/hr)</span>
+                  <span class="field-value" id="hourly-val">0.85</span>
+                </div>
+                <input id="hourly" type="range" min="0.05" max="5.00" step="0.05" value="0.85">
+              </div>
+              
+              <div class="field">
+                <div class="field-header">
+                  <span class="field-label">Jobs / Month</span>
+                  <span class="field-value" id="runs-val">300</span>
+                </div>
+                <input id="runs" type="range" min="10" max="5000" step="10" value="300">
+              </div>
+            </div>
           </div>
 
-          <div class="control-row">
-            <div class="field"><label for="overhead">Runtime overhead <span>GB</span></label><input id="overhead" type="number" step="0.25" min="0" value="2"></div>
-            <div class="field"><label for="vram">Available VRAM <span>GB</span></label><input id="vram" type="number" step="1" min="1" value="24"></div>
+          <!-- Actions -->
+          <div class="button-group">
+            <button class="btn btn-primary" id="copySummary">
+              <span>📋</span> Copy Specification
+            </button>
+            <button class="btn btn-secondary" id="reset">Reset Parameters</button>
           </div>
 
-          <div class="control-row">
-            <div class="field"><label for="tps">Tokens/sec <span>estimate</span></label><input id="tps" type="number" step="1" min="0.1" value="30"></div>
-            <div class="field"><label for="outTokens">Tokens to generate <span>count</span></label><input id="outTokens" type="number" step="100" min="1" value="2000"></div>
-          </div>
-
-          <div class="control-row">
-            <div class="field"><label for="hourly">Rental price <span>$/hour</span></label><input id="hourly" type="number" step="0.01" min="0" value="1.25"></div>
-            <div class="field"><label for="runs">Runs/month <span>jobs</span></label><input id="runs" type="number" step="1" min="1" value="100"></div>
-          </div>
-
-          <div class="btnrow">
-            <button class="btn" id="copySummary">Copy summary</button>
-            <button class="btn secondary" id="reset">Reset</button>
-          </div>
         </div>
       </aside>
 
-      <section class="output">
-        <div class="card verdict">
+      <!-- OUTPUTS COLUMN -->
+      <section class="outputs-container">
+        
+        <!-- Live Verdict Panel -->
+        <div class="card verdict-card">
           <div class="verdict-main">
-            <div id="status" class="status tight">Calculating</div>
-            <h2 id="headline">Checking fit…</h2>
-            <p id="explain">The calculator will rank weight memory, KV cache, runtime overhead, speed, and rental cost.</p>
+            <div id="status" class="status-badge fit">Fits</div>
+            <h2 id="headline" class="verdict-title">VRAM OK. Ready for local execution.</h2>
+            <p id="explain" class="verdict-desc">Analyzing mathematical memory margins...</p>
           </div>
-          <div class="gauge">
-            <div class="ring" id="ring" data-label="0%\nVRAM"></div>
-            <small id="gaugeText">VRAM usage ratio</small>
-          </div>
-        </div>
-
-        <div class="metrics">
-          <div class="metric"><div class="label">Weights</div><div class="value" id="weightsOut">–</div><div class="hint">params × bytes per param</div></div>
-          <div class="metric"><div class="label">KV cache</div><div class="value" id="kvOut">–</div><div class="hint">2 × layers × hidden × tokens × bytes</div></div>
-          <div class="metric"><div class="label">Total VRAM</div><div class="value" id="totalOut">–</div><div class="hint">weights + KV + overhead</div></div>
-          <div class="metric"><div class="label">Generation</div><div class="value" id="timeOut">–</div><div class="hint">desired tokens / tokens/sec</div></div>
-        </div>
-
-        <div class="card bars">
-          <div class="card-header" style="padding:0 0 16px">
-            <h2 class="card-title">Memory breakdown</h2>
-            <p class="card-sub">Shorter is easier to fit. If KV cache is huge, reduce context before blaming the model.</p>
-          </div>
-          <div class="bar-grid">
-            <div class="bar-row"><div class="bar-top"><span>Weights</span><strong id="weightsBarText">–</strong></div><div class="bar"><span id="weightsBar"></span></div></div>
-            <div class="bar-row"><div class="bar-top"><span>KV cache</span><strong id="kvBarText">–</strong></div><div class="bar"><span id="kvBar"></span></div></div>
-            <div class="bar-row"><div class="bar-top"><span>Overhead</span><strong id="overheadBarText">–</strong></div><div class="bar"><span id="overheadBar"></span></div></div>
-            <div class="bar-row"><div class="bar-top"><span>Available VRAM</span><strong id="vramBarText">–</strong></div><div class="bar"><span id="vramBar"></span></div></div>
+          <div class="gauge-wrapper">
+            <div class="gauge-ring" id="ring" data-label="38%&#10;VRAM"></div>
+            <small class="gauge-sub" id="gaugeText">0.0 GB of 16.0 GB VRAM utilized</small>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <h2 class="card-title">Rent economics</h2>
-            <p class="card-sub">This is intentionally simple: inference time × hourly rental price. It excludes cold starts, storage, bandwidth, and queue delays.</p>
+        <!-- Segmented GPU VRAM allocation bar -->
+        <div class="card vram-bar-panel">
+          <h2 class="card-title">
+            <span class="card-title-icon">📊</span> VRAM Allocation Blueprint
+          </h2>
+          <p class="card-sub">Interactive graphical breakdown of where every megabyte goes.</p>
+          
+          <div class="allocation-bar-container">
+            <div class="allocation-bar" id="allocation-bar">
+              <div class="allocation-segment weights" id="segment-weights" data-tooltip="Weights: 0 GB"></div>
+              <div class="allocation-segment kv" id="segment-kv" data-tooltip="KV Cache: 0 GB"></div>
+              <div class="allocation-segment overhead" id="segment-overhead" data-tooltip="Overhead: 0 GB"></div>
+              <div class="allocation-segment vram-line" id="segment-vram-line"></div>
+              <div class="allocation-overflow" id="segment-overflow"></div>
+            </div>
           </div>
-          <div class="rent">
-            <div class="rent-box"><strong id="oneRunCost">–</strong><span>Estimated rental cost for one generation job.</span></div>
-            <div class="rent-box"><strong id="monthCost">–</strong><span>Estimated rental cost at your monthly run count.</span></div>
+
+          <div class="legend-grid">
+            <div class="legend-item">
+              <div class="legend-color weights"></div>
+              <span class="legend-label">Model Weights</span>
+              <span class="legend-value" id="legend-weights-val">0.0 GB</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color kv"></div>
+              <span class="legend-label">KV Cache</span>
+              <span class="legend-value" id="legend-kv-val">0.0 GB</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color overhead"></div>
+              <span class="legend-label">Engine Overhead</span>
+              <span class="legend-value" id="legend-overhead-val">0.0 GB</span>
+            </div>
+            <div class="legend-item" id="legend-limit-container">
+              <div class="legend-color limit"></div>
+              <span class="legend-label">VRAM Limit</span>
+              <span class="legend-value" id="legend-limit-val">16.0 GB</span>
+            </div>
+            <div class="legend-item" id="legend-overflow-container" style="display: none;">
+              <div class="legend-color overflow"></div>
+              <span class="legend-label">Out of VRAM</span>
+              <span class="legend-value" id="legend-overflow-val">0.0 GB</span>
+            </div>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-header"><h2 class="card-title">Formulas</h2><p class="card-sub">The thread’s mental model, converted into a reusable static tool.</p></div>
-          <div class="formula">
-            <code><b>Weights GB</b><br>parameters_B × bytes_per_param</code>
-            <code><b>KV cache GB</b><br>2 × layers × hidden_size × context_tokens × kv_bytes / 1e9</code>
-            <code><b>Generation time</b><br>output_tokens / tokens_per_second</code>
+        <!-- Numeric Metrics -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <span class="metric-label">Model Weights</span>
+            <div class="metric-value" id="weightsOut">-</div>
+            <span class="metric-hint" id="weightsHint">Params × Bitrate / 8</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">KV Cache Size</span>
+            <div class="metric-value" id="kvOut">-</div>
+            <span class="metric-hint">2×L×KV_H×(H/Q_H)×Ctx×Bytes</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Total Required</span>
+            <div class="metric-value" id="totalOut">-</div>
+            <span class="metric-hint">Weights + KV + Overhead</span>
+          </div>
+          <div class="metric-card">
+            <span class="metric-label">Inference Job</span>
+            <div class="metric-value" id="timeOut">-</div>
+            <span class="metric-hint">Execution duration/run</span>
           </div>
         </div>
+
+        <!-- Hardware recommendation matching -->
+        <div class="card gpu-panel">
+          <h2 class="card-title">
+            <span class="card-title-icon">💻</span> Local GPU Compatibility Recommender
+          </h2>
+          <p class="card-sub">See how physical consumer GPUs and cloud hardware fit your configured parameters.</p>
+          
+          <div class="gpu-grid" id="gpuGrid">
+            <!-- Dynamic GPUs go here -->
+          </div>
+        </div>
+
+        <!-- Buy vs Rent upgraded Economics -->
+        <div class="card rent-panel">
+          <h2 class="card-title">
+            <span class="card-title-icon">💰</span> Buy vs. Cloud Rental Economics
+          </h2>
+          <p class="card-sub">Calculates direct cloud GPU API run costs versus purchasing dedicated physical hardware.</p>
+          
+          <div class="rent-grid">
+            <div class="rent-box">
+              <strong id="oneRunCost">-</strong>
+              <span>Estimated cost per cloud API run.</span>
+            </div>
+            <div class="rent-box">
+              <strong id="monthCost">-</strong>
+              <span>Cloud rental spent per month.</span>
+            </div>
+            <div class="rent-box">
+              <strong id="paybackCost">-</strong>
+              <span>Hardware payback timeline.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulas (Accordion) -->
+        <div class="card formulas-card">
+          <div class="formulas-header" onclick="toggleFormulas()">
+            <h2 class="card-title" style="font-size: 15px;">
+              <span class="card-title-icon">🧮</span> View Mathematical Formula Specs
+            </h2>
+            <span id="formula-toggle-icon" style="color: var(--muted); font-size: 12px;">[Expand]</span>
+          </div>
+          <div class="formulas-body" id="formulasBody" style="display: none;">
+            <code>
+              <strong>Weights Size (GB)</strong>
+              (Params (B) × Bitrate / 8) + 0.15 GB baseline. Includes standard GGUF header/norms padding factors.
+            </code>
+            <code>
+              <strong>KV Cache (GB)</strong>
+              2 × L × KV_H × (H / Q_H) × Ctx × Bytes / 1e9.
+              GQA reduces this significantly by keeping KV Heads smaller than Query Heads.
+            </code>
+            <code>
+              <strong>Inference duration</strong>
+              Output tokens / (Tokens/Sec). Cost matches execution time scaled by hourly rental.
+            </code>
+          </div>
+        </div>
+
       </section>
-    </section>
+    </div>
 
-    <p class="foot"><strong>Note:</strong> this is a planning estimator, not a benchmark. Real fit depends on framework, tensor parallelism, batch size, quantization format, attention implementation, GPU fragmentation, and model-specific architecture. But it catches the obvious “this won’t fit” mistakes before you waste time.</p>
+    <!-- FOOTER -->
+    <footer class="footer">
+      <p>Estimates are mathematically modeled for standard local backends (llama.cpp, ExLlamaV2, vLLM). Actual runtime requirements can vary with context shifting, batch configurations, and specific engine flash-attention implementations.</p>
+      <p style="margin-top: 8px;">Created with ✨ by <a href="https://agentcortex.space" target="_blank" style="color: var(--cyan); text-decoration: none; font-weight: 600;">Agent Cortex</a> for local AI deployment planning.</p>
+    </footer>
+
   </main>
 
+  <!-- MOBILE FLOATING STICKY STATUS BAR WIDGET -->
+  <div class="mobile-status-bar" id="mobileWidget">
+    <div class="mobile-status-info">
+      <div class="mobile-status-model" id="mobileWidgetPresetName">Llama 3 8B</div>
+      <div class="mobile-status-details">
+        <span id="mobileWidgetTotalVram">5.8 GB</span> / <span id="mobileWidgetMaxVram">16 GB</span>
+        <span class="mobile-status-badge fit" id="mobileWidgetBadge">FITS</span>
+      </div>
+    </div>
+    <button class="mobile-status-btn" onclick="scrollToOutputs()">Results</button>
+  </div>
+
+  <!-- JAVASCRIPT SYSTEM ENGINE -->
   <script>
     const $ = (id) => document.getElementById(id);
-    const fields = ['params','precision','layers','hidden','tokens','kvBytes','overhead','vram','tps','outTokens','hourly','runs'];
-    const presets = {
-      llama7b: { params: 7, layers: 32, hidden: 4096 },
-      llama13b: { params: 13, layers: 40, hidden: 5120 },
-      llama34b: { params: 34, layers: 48, hidden: 8192 },
-      llama70b: { params: 70, layers: 80, hidden: 8192 }
-    };
-    const defaults = { params:13, precision:2, layers:40, hidden:5120, tokens:8192, kvBytes:2, overhead:2, vram:24, tps:30, outTokens:2000, hourly:1.25, runs:100 };
 
-    function n(id) { return Number($(id).value || 0); }
-    function gb(x) { return `${x.toFixed(x >= 10 ? 1 : 2)} GB`; }
-    function money(x) { return `$${x.toFixed(x >= 10 ? 2 : 4)}`; }
+    // List of interactive fields with range and dropdown behaviors
+    const fields = [
+      'params', 'precision', 'layers', 'hidden', 'qHeads', 'kvHeads',
+      'tokens', 'kvBytes', 'overhead', 'vram', 'tps', 'outTokens', 'hourly', 'runs'
+    ];
+
+    // Local model presets database (includes key GQA attributes)
+    const presets = {
+      llama3_8b: { params: 8.03, layers: 32, hidden: 4096, qHeads: 32, kvHeads: 8, name: "Llama 3 8B" },
+      llama3_70b: { params: 70.6, layers: 80, hidden: 8192, qHeads: 64, kvHeads: 8, name: "Llama 3 70B" },
+      mistral7b: { params: 7.24, layers: 32, hidden: 4096, qHeads: 32, kvHeads: 8, name: "Mistral 7B" },
+      gemma2_9b: { params: 9.24, layers: 42, hidden: 3584, qHeads: 16, kvHeads: 8, name: "Gemma 2 9B" },
+      phi3_mini: { params: 3.82, layers: 32, hidden: 3072, qHeads: 32, kvHeads: 32, name: "Phi 3 Mini" },
+      deepseek_6b: { params: 6.74, layers: 32, hidden: 4096, qHeads: 32, kvHeads: 8, name: "DeepSeek 6.7B" }
+    };
+
+    // Hardware parameters list (Local GPUs and unified Macs)
+    const hardwareList = [
+      { name: "RTX 3060 12GB", vram: 12, cost: 290, type: "gpu" },
+      { name: "RTX 4060 Ti 16GB", vram: 16, cost: 440, type: "gpu" },
+      { name: "RTX 3090 24GB (Used)", vram: 24, cost: 750, type: "gpu" },
+      { name: "RTX 4090 24GB", vram: 24, cost: 1650, type: "gpu" },
+      { name: "Dual RTX 3090s 48GB", vram: 48, cost: 1500, type: "gpu" },
+      { name: "Mac Studio M2/M3 (64GB)*", vram: 48, cost: 2199, type: "mac" }, // Unified memory limit allocation rule (~75% max VRAM allocation)
+      { name: "Mac Studio M2/M3 (128GB)*", vram: 96, cost: 3999, type: "mac" },
+      { name: "RTX 6000 Ada 48GB", vram: 48, cost: 6800, type: "gpu" },
+      { name: "A100 Enterprise 80GB", vram: 80, cost: 10500, type: "gpu" }
+    ];
+
+    const defaults = {
+      params: 8,
+      precision: 4.8,
+      layers: 32,
+      hidden: 4096,
+      qHeads: 32,
+      kvHeads: 8,
+      tokens: 8192,
+      kvBytes: 2,
+      overhead: 1.5,
+      vram: 16,
+      tps: 25,
+      outTokens: 2000,
+      hourly: 0.85,
+      runs: 300
+    };
+
+    // Formatter helpers
+    function gb(x) {
+      return `${x.toFixed(x >= 10 ? 1 : 2)} GB`;
+    }
+    function money(x) {
+      return `$${x.toFixed(x >= 10 ? 2 : 4)}`;
+    }
     function seconds(s) {
       if (s < 60) return `${s.toFixed(1)}s`;
       if (s < 3600) return `${(s/60).toFixed(1)}m`;
       return `${(s/3600).toFixed(2)}h`;
     }
-    function pct(x) { return `${Math.max(2, Math.min(100, x)).toFixed(0)}%`; }
+    function commaNumber(x) {
+      return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
 
+    // Toggle formula section open/close
+    function toggleFormulas() {
+      const body = $('formulasBody');
+      const icon = $('formula-toggle-icon');
+      if (body.style.display === 'none') {
+        body.style.display = 'grid';
+        icon.textContent = '[Collapse]';
+      } else {
+        body.style.display = 'none';
+        icon.textContent = '[Expand]';
+      }
+    }
+
+    // Scroll directly to the outputs on mobile
+    function scrollToOutputs() {
+      $('allocation-bar').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Save inputs to localStorage
     function save() {
       const data = Object.fromEntries(fields.map(f => [f, $(f).value]));
       data.modelPreset = $('modelPreset').value;
-      localStorage.setItem('llm-fit-rent-calculator', JSON.stringify(data));
+      localStorage.setItem('llm-vram-calc-presets', JSON.stringify(data));
     }
 
+    // Mathematical VRAM calculator logic
     function calculate() {
-      const paramsB = n('params');
-      const precision = n('precision');
-      const layers = n('layers');
-      const hidden = n('hidden');
-      const tokens = n('tokens');
-      const kvBytes = n('kvBytes');
-      const overhead = n('overhead');
-      const vram = n('vram');
-      const tps = n('tps');
-      const outTokens = n('outTokens');
-      const hourly = n('hourly');
-      const runs = n('runs');
+      const paramsB = Number($('params').value || 0);
+      const bitrate = Number($('precision').value || 0);
+      const layers = Number($('layers').value || 0);
+      const hidden = Number($('hidden').value || 0);
+      const qHeads = Number($('qHeads').value || 0);
+      const kvHeads = Number($('kvHeads').value || 0);
+      const tokens = Number($('tokens').value || 0);
+      const kvBytes = Number($('kvBytes').value || 0);
+      const overhead = Number($('overhead').value || 0);
+      const vram = Number($('vram').value || 0);
+      const tps = Number($('tps').value || 0);
+      const outTokens = Number($('outTokens').value || 0);
+      const hourly = Number($('hourly').value || 0);
+      const runs = Number($('runs').value || 0);
 
-      const weights = paramsB * precision;
-      const kv = (2 * layers * hidden * tokens * kvBytes) / 1e9;
+      // 1. Model Weights Memory (in GB) + tiny GGUF baseline overhead (0.15 GB)
+      const weights = (paramsB * bitrate) / 8 + 0.15;
+
+      // 2. Accurate KV Cache Size calculation supporting Grouped-Query Attention (GQA)
+      // d_head = hidden / qHeads
+      // KV cache projection per layer = 2 * kvHeads * d_head
+      const headDim = hidden / qHeads;
+      const kvElementsPerToken = 2 * layers * kvHeads * headDim;
+      const kv = (kvElementsPerToken * tokens * kvBytes) / 1e9;
+
+      // 3. Total Memory Footprint
       const total = weights + kv + overhead;
       const ratio = total / Math.max(vram, 0.0001);
+      const headroom = vram - total;
+
+      // 4. Economics
       const genSec = outTokens / Math.max(tps, 0.0001);
       const costOne = (genSec / 3600) * hourly;
       const costMonth = costOne * runs;
-      const headroom = vram - total;
 
+      // Update basic labels in real-time
+      $('params-val').textContent = paramsB;
+      $('layers-val').textContent = layers;
+      $('hidden-val').textContent = hidden;
+      $('qheads-val').textContent = qHeads;
+      $('kvheads-val').textContent = kvHeads;
+      $('tokens-val').textContent = commaNumber(tokens);
+      $('overhead-val').textContent = overhead;
+      $('vram-val').textContent = vram;
+      $('tps-val').textContent = tps;
+      $('outTokens-val').textContent = outTokens;
+      $('hourly-val').textContent = hourly.toFixed(2);
+      $('runs-val').textContent = runs;
+
+      // Fill basic metrics
       $('weightsOut').textContent = gb(weights);
       $('kvOut').textContent = gb(kv);
       $('totalOut').textContent = gb(total);
       $('timeOut').textContent = seconds(genSec);
-      $('oneRunCost').textContent = money(costOne);
-      $('monthCost').textContent = money(costMonth);
+      
+      $('legend-weights-val').textContent = gb(weights);
+      $('legend-kv-val').textContent = gb(kv);
+      $('legend-overhead-val').textContent = gb(overhead);
+      $('legend-limit-val').textContent = gb(vram);
 
+      // 5. Update circular UI gauge
       const ringPct = Math.min(100, ratio * 100);
       $('ring').style.setProperty('--p', `${ringPct}%`);
       $('ring').dataset.label = `${(ratio * 100).toFixed(0)}%\nVRAM`;
       $('gaugeText').textContent = `${gb(total)} required vs ${gb(vram)} available`;
 
-      const status = $('status');
-      status.className = 'status';
+      // Set gauge and text colors based on limits
+      const statusBadge = $('status');
+      statusBadge.className = 'status-badge';
+      
+      const mobileWidgetBadge = $('mobileWidgetBadge');
+      mobileWidgetBadge.className = 'mobile-status-badge';
+
       if (ratio <= 0.85) {
-        status.classList.add('fit');
-        status.textContent = 'Fits';
-        $('headline').textContent = `${gb(headroom)} headroom. Run it locally.`;
-        $('explain').textContent = 'You have enough space for weights, KV cache, and overhead. Rent only if you need much faster tokens/sec.';
-      } else if (ratio <= 1) {
-        status.classList.add('tight');
-        status.textContent = 'Barely fits';
-        $('headline').textContent = `${gb(headroom)} headroom. Risky but possible.`;
-        $('explain').textContent = 'This may load, but fragmentation, batching, or framework overhead can break it. Reduce context or quantize before calling it safe.';
+        statusBadge.classList.add('fit');
+        statusBadge.textContent = 'Fits';
+        mobileWidgetBadge.classList.add('fit');
+        mobileWidgetBadge.textContent = 'Fits';
+        $('ring').style.setProperty('--color', 'var(--green)');
+        $('headline').textContent = `${gb(headroom)} headroom. Local OK.`;
+        $('explain').textContent = 'Perfect fit. Running local offline models on your target VRAM is highly recommended with no speed issues.';
+      } else if (ratio <= 1.0) {
+        statusBadge.classList.add('tight');
+        statusBadge.textContent = 'Barely Fits';
+        mobileWidgetBadge.classList.add('tight');
+        mobileWidgetBadge.textContent = 'Tight';
+        $('ring').style.setProperty('--color', 'var(--orange)');
+        $('headline').textContent = `${gb(headroom)} headroom. Extreme risk.`;
+        $('explain').textContent = 'This config is tight. CUDA fragmentation or active OS UI overhead could trigger Out-Of-Memory (OOM). Reduce context window or increase weight quantization levels.';
       } else {
-        status.classList.add('nope');
-        status.textContent = 'Does not fit';
-        $('headline').textContent = `${gb(total - vram)} over budget. Rent or quantize.`;
-        $('explain').textContent = 'Your VRAM budget is blown. Drop precision, reduce context, pick a smaller model, or rent a bigger GPU.';
+        statusBadge.classList.add('nope');
+        statusBadge.textContent = 'Does Not Fit';
+        mobileWidgetBadge.classList.add('nope');
+        mobileWidgetBadge.textContent = 'OOM';
+        $('ring').style.setProperty('--color', 'var(--red)');
+        $('headline').textContent = `${gb(total - vram)} over budget. OOM Error.`;
+        $('explain').textContent = 'VRAM capacity exceeded! The model will not run locally on this hardware unless you drop quantization bits, drop context length, or upgrade hardware.';
       }
 
-      const max = Math.max(weights, kv, overhead, vram, total);
-      const rows = [
-        ['weightsBar', 'weightsBarText', weights],
-        ['kvBar', 'kvBarText', kv],
-        ['overheadBar', 'overheadBarText', overhead],
-        ['vramBar', 'vramBarText', vram]
-      ];
-      rows.forEach(([bar, text, val]) => { $(bar).style.setProperty('--w', pct((val / max) * 100)); $(text).textContent = gb(val); });
+      // 6. Sticky Mobile Bar Widget Update
+      const presetSelect = $('modelPreset');
+      let activeModelName = presetSelect.options[presetSelect.selectedIndex].text.split(' (')[0];
+      $('mobileWidgetPresetName').textContent = activeModelName;
+      $('mobileWidgetTotalVram').textContent = gb(total);
+      $('mobileWidgetMaxVram').textContent = gb(vram);
+
+      // 7. Update Interactive VRAM Segmented allocation bar
+      const maxVramVisual = Math.max(vram, total);
+      const wPct = (weights / maxVramVisual) * 100;
+      const kPct = (kv / maxVramVisual) * 100;
+      const oPct = (overhead / maxVramVisual) * 100;
+
+      $('segment-weights').style.width = `${wPct}%`;
+      $('segment-weights').dataset.tooltip = `Model Weights: ${gb(weights)}`;
+      
+      $('segment-kv').style.width = `${kPct}%`;
+      $('segment-kv').dataset.tooltip = `KV Cache Size: ${gb(kv)}`;
+      
+      $('segment-overhead').style.width = `${oPct}%`;
+      $('segment-overhead').dataset.tooltip = `Engine/System Overhead: ${gb(overhead)}`;
+
+      // Setup available VRAM limitation line location
+      const limitLinePct = (vram / maxVramVisual) * 100;
+      $('segment-vram-line').style.left = `${limitLinePct}%`;
+
+      // Handle overflow indicators
+      if (total > vram) {
+        const overGB = total - vram;
+        $('segment-overflow').style.display = 'block';
+        $('legend-overflow-container').style.display = 'flex';
+        $('legend-overflow-val').textContent = gb(overGB);
+      } else {
+        $('segment-overflow').style.display = 'none';
+        $('legend-overflow-container').style.display = 'none';
+      }
+
+      // 8. GPU Recommendation Generator
+      const gpuGrid = $('gpuGrid');
+      gpuGrid.innerHTML = '';
+      
+      hardwareList.forEach(hw => {
+        const card = document.createElement('div');
+        card.className = 'gpu-card';
+        
+        let status = 'insufficient';
+        if (total <= hw.vram * 0.85) {
+          status = 'recommended';
+        } else if (total <= hw.vram) {
+          status = 'barely';
+        }
+        
+        card.classList.add(status);
+        
+        // Custom name override if it's Mac Unified memory configuration
+        let nameText = hw.name;
+        
+        card.innerHTML = `
+          <div class="gpu-name">${nameText}</div>
+          <div class="gpu-vram">${hw.vram} GB GDDR / Unified</div>
+          <div class="gpu-price-tag">Estimated Hardware cost: ~$${hw.cost}</div>
+        `;
+        gpuGrid.appendChild(card);
+      });
+
+      // 9. UPGRADED ECONOMICS: Buy vs. Rent
+      $('oneRunCost').textContent = money(costOne);
+      $('monthCost').textContent = money(costMonth);
+
+      // Dynamically calculate break-even point for hardware purchase
+      // Find the best suited target local GPU
+      let fitCard = hardwareList.find(hw => hw.vram >= total);
+      if (fitCard) {
+        const monthsPayback = fitCard.cost / Math.max(costMonth, 0.0001);
+        if (monthsPayback > 36) {
+          $('paybackCost').textContent = `> 3 Years`;
+          $('paybackCost').nextElementSibling.textContent = `Better to rent: very long payback duration for ${fitCard.name}.`;
+        } else {
+          $('paybackCost').textContent = `${monthsPayback.toFixed(1)} Months`;
+          $('paybackCost').nextElementSibling.textContent = `Payback period to buy ${fitCard.name} ($${fitCard.cost}) instead of renting cloud.`;
+        }
+      } else {
+        // Exceeds A100 80GB, check multi clusters
+        $('paybackCost').textContent = `Enterprise Class`;
+        $('paybackCost').nextElementSibling.textContent = `Requires multi-GPU setups. Cloud API highly recommended.`;
+      }
 
       save();
-      return { weights, kv, total, vram, genSec, costOne, costMonth, ratio };
+      return { weights, kv, total, vram, genSec, costOne, costMonth, ratio, activeModelName };
     }
 
+    // Sync Preset selector elements with configuration inputs
+    $('modelPreset').addEventListener('change', (e) => {
+      const p = presets[e.target.value];
+      if (p) {
+        $('params').value = p.params;
+        $('layers').value = p.layers;
+        $('hidden').value = p.hidden;
+        $('qHeads').value = p.qHeads;
+        $('kvHeads').value = p.kvHeads;
+        
+        // Hide architecture fields if it's a fixed preset, but show for custom to avoid visual clutter
+        if (e.target.value === 'custom') {
+          $('architectureGroup').style.opacity = '1';
+          $('architectureGroup').style.pointerEvents = 'auto';
+        } else {
+          $('architectureGroup').style.opacity = '0.7';
+        }
+      }
+      calculate();
+    });
+
+    // Handle range sliders updates dynamically
+    fields.forEach(f => {
+      $(f).addEventListener('input', () => {
+        // If user actively slides variables, set preset choice to Custom
+        if (f !== 'vram' && f !== 'tps' && f !== 'outTokens' && f !== 'hourly' && f !== 'runs') {
+          $('modelPreset').value = 'custom';
+          $('architectureGroup').style.opacity = '1';
+        }
+        calculate();
+      });
+    });
+
+    // Reset controls back to stable defaults
+    $('reset').addEventListener('click', () => {
+      Object.entries(defaults).forEach(([k,v]) => {
+        $(k).value = v;
+      });
+      $('modelPreset').value = 'llama3_8b';
+      $('architectureGroup').style.opacity = '0.7';
+      calculate();
+    });
+
+    // Share Specifications summary
+    $('copySummary').addEventListener('click', async () => {
+      const r = calculate();
+      const quantLabel = $('precision').options[$('precision').selectedIndex].text.split(' · ')[0];
+      const summaryText = `[Local AI VRAM Calculation Profile]
+Model Architecture: ${r.activeModelName} (${$('params').value}B Parameters)
+Quantization Level: ${quantLabel}
+Context Size: ${$('tokens').value} tokens
+---
+Weights VRAM: ${gb(r.weights)}
+KV Cache VRAM: ${gb(r.kv)}
+Total VRAM Required: ${gb(r.total)} vs ${gb(r.vram)} available VRAM (${(r.ratio*100).toFixed(0)}%)
+Local Fitting Verdict: ${r.ratio <= 0.85 ? 'FITS ✅' : r.ratio <= 1.0 ? 'BARELY FITS ⚠️' : 'OOM ERROR ❌'}
+---
+Cloud Economics Spend: ${money(r.costOne)}/run (${money(r.costMonth)}/month)
+Estimator compiled via: Local VRAM performance Planner.`;
+      
+      try {
+        await navigator.clipboard.writeText(summaryText);
+        const originalText = $('copySummary').innerHTML;
+        $('copySummary').innerHTML = '<span>Check mark ✅</span> Copied!';
+        setTimeout(() => {
+          $('copySummary').innerHTML = originalText;
+        }, 1500);
+      } catch {
+        alert(summaryText);
+      }
+    });
+
+    // Load initial storage settings or preset
     function load() {
       try {
-        const saved = JSON.parse(localStorage.getItem('llm-fit-rent-calculator') || '{}');
-        fields.forEach(f => { if (saved[f] !== undefined) $(f).value = saved[f]; });
-        if (saved.modelPreset) $('modelPreset').value = saved.modelPreset;
+        const saved = JSON.parse(localStorage.getItem('llm-vram-calc-presets') || '{}');
+        fields.forEach(f => {
+          if (saved[f] !== undefined) $(f).value = saved[f];
+        });
+        if (saved.modelPreset) {
+          $('modelPreset').value = saved.modelPreset;
+          if (saved.modelPreset !== 'custom') {
+            $('architectureGroup').style.opacity = '0.7';
+          }
+        }
       } catch {}
       calculate();
     }
 
-    $('modelPreset').addEventListener('change', (e) => {
-      const p = presets[e.target.value];
-      if (p) Object.entries(p).forEach(([k,v]) => $(k).value = v);
-      calculate();
-    });
-    fields.forEach(f => $(f).addEventListener('input', () => { $('modelPreset').value = 'custom'; calculate(); }));
-    $('reset').addEventListener('click', () => { Object.entries(defaults).forEach(([k,v]) => $(k).value = v); $('modelPreset').value = 'llama13b'; calculate(); });
-    $('copySummary').addEventListener('click', async () => {
-      const r = calculate();
-      const text = `LLM fit estimate: total ${gb(r.total)} vs ${gb(r.vram)} VRAM (${(r.ratio*100).toFixed(0)}%). Weights ${gb(r.weights)}, KV ${gb(r.kv)}. Generation ${seconds(r.genSec)}. Rent estimate ${money(r.costOne)}/run, ${money(r.costMonth)}/month.`;
-      try { await navigator.clipboard.writeText(text); $('copySummary').textContent = 'Copied'; setTimeout(() => $('copySummary').textContent = 'Copy summary', 1200); }
-      catch { alert(text); }
-    });
+    // Run!
     load();
   </script>
 </body>
