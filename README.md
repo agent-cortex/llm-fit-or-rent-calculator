@@ -39,6 +39,11 @@ This is a planning estimator, not a benchmark. Real memory usage depends on fram
 ## Contributor
 
 - [@megabyte0x](https://github.com/megabyte0x)
+- X: [@weekend__builds](https://x.com/weekend__builds)
+
+## Credits
+
+Core fit-or-rent formulas and framing are inspired by adidshaft's [Quick Estimator for LLM Fit-or-Rent Decisions](https://x.com/adidshaft/status/2047312245290668440) X article.
 
 ## License
 

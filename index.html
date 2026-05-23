@@ -139,7 +139,14 @@
       color: var(--cyan);
     }
 
-    .github-link {
+    .header-links {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      align-items: flex-end;
+    }
+
+    .source-link {
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -154,17 +161,17 @@
       transition: all 0.2s;
       align-self: flex-start;
     }
-    .github-link:hover {
+    .source-link:hover {
       background: rgba(255, 255, 255, 0.1);
       border-color: var(--cyan);
       box-shadow: 0 0 15px rgba(0, 242, 254, 0.15);
       transform: translateY(-1px);
     }
-    .github-link svg {
+    .source-link svg {
       color: var(--muted);
       transition: color 0.2s;
     }
-    .github-link:hover svg {
+    .source-link:hover svg {
       color: var(--cyan);
     }
 
@@ -853,6 +860,14 @@
     .footer a:hover {
       text-decoration: underline;
     }
+    .credit-line {
+      margin-top: 8px;
+    }
+
+    .credit-line strong {
+      color: var(--muted);
+      font-weight: 700;
+    }
 
     /* Mobile Sticky Bottom Status Bar Widget */
     .mobile-status-bar {
@@ -985,12 +1000,18 @@
         </div>
       </div>
       
-      <a href="https://github.com/agent-cortex/llm-fit-or-rent-calculator" target="_blank" class="github-link" title="View Source on GitHub">
-        <svg height="18" width="18" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;">
-          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
-        </svg>
-        <span>GitHub</span>
-      </a>
+      <div class="header-links">
+        <a href="https://github.com/agent-cortex/llm-fit-or-rent-calculator" target="_blank" rel="noopener noreferrer" class="source-link" title="View Source on GitHub">
+          <svg height="18" width="18" viewBox="0 0 16 16" fill="currentColor" style="vertical-align: middle;">
+            <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"></path>
+          </svg>
+          <span>GitHub</span>
+        </a>
+        <a href="https://x.com/weekend__builds" target="_blank" rel="noopener noreferrer" class="source-link" title="Follow Weekend Builds on X">
+          <span style="font-weight: 900; color: var(--cyan);">𝕏</span>
+          <span>@weekend__builds</span>
+        </a>
+      </div>
     </header>
 
     <!-- CONTENT GRID -->
@@ -1344,7 +1365,8 @@
     <!-- FOOTER -->
     <footer class="footer">
       <p>Estimates are mathematically modeled for standard local backends (llama.cpp, ExLlamaV2, vLLM). Actual runtime requirements can vary with context shifting, batch configurations, and specific engine flash-attention implementations.</p>
-      <p style="margin-top: 8px;">Created with ✨ by <a href="https://agentcortex.space" target="_blank" style="color: var(--cyan); text-decoration: none; font-weight: 600;">Agent Cortex</a> for local AI deployment planning.</p>
+      <p class="credit-line"><strong>Credit:</strong> formulas and fit-or-rent framing inspired by adidshaft’s <a href="https://x.com/adidshaft/status/2047312245290668440" target="_blank" rel="noopener noreferrer">Quick Estimator for LLM Fit-or-Rent Decisions</a> X article.</p>
+      <p class="credit-line">Created with ✨ by <a href="https://agentcortex.space" target="_blank" rel="noopener noreferrer" style="color: var(--cyan); text-decoration: none; font-weight: 600;">Agent Cortex</a> · follow <a href="https://x.com/weekend__builds" target="_blank" rel="noopener noreferrer" style="color: var(--cyan); text-decoration: none; font-weight: 600;">@weekend__builds</a>.</p>
     </footer>
 
   </main>
