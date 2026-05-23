@@ -2,7 +2,9 @@
 
 A static, no-backend calculator for estimating whether a large language model fits on a local GPU or should be rented on cloud hardware.
 
-Live here.now build: https://quaint-igloo-43wn.here.now/
+Live production domain: https://vram-calculator.agentcortex.space/
+
+Vercel fallback URL: https://vram-calculator-agentcortex.vercel.app/
 
 ## What it calculates
 
