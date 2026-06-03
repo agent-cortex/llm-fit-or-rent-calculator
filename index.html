@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Local AI GPU VRAM Calculator</title>
-  <meta name="deploy-marker" content="auto-main-20260523T204525Z" />
+  <meta name="deploy-marker" content="data-refresh-20260603T171230Z" />
   
   <!-- Premium Modern Typography -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -997,6 +997,7 @@
           <span class="badge cyan">Grouped-Query Attention (GQA) Supported</span>
           <span class="badge">Static client-side app</span>
           <span class="badge">Quantization-aware</span>
+          <span class="badge">Data refreshed · Jun 2026</span>
         </div>
       </div>
       
@@ -1037,12 +1038,14 @@
                 <span class="field-label">Model Preset</span>
               </div>
               <select id="modelPreset">
-                <option value="llama3_8b">Llama 3 8B (GQA 4:1)</option>
-                <option value="llama3_70b">Llama 3 70B (GQA 8:1)</option>
-                <option value="mistral7b">Mistral 7B v0.3 (GQA 4:1)</option>
-                <option value="gemma2_9b">Gemma 2 9B (GQA 2:1)</option>
-                <option value="phi3_mini">Phi 3 Mini 3.8B (MHA 1:1)</option>
-                <option value="deepseek_6b">DeepSeek Coder 6.7B (GQA 4:1)</option>
+                <option value="qwen3_8b">Qwen3 8B (GQA 4:1, 40K)</option>
+                <option value="llama3_8b">Llama 3.1 8B (GQA 4:1, 128K)</option>
+                <option value="qwen3_14b">Qwen3 14B (GQA 5:1, 40K)</option>
+                <option value="mistral_small_32_24b">Mistral Small 3.2 24B (GQA 4:1, 128K)</option>
+                <option value="qwen3_32b">Qwen3 32B (GQA 8:1, 40K)</option>
+                <option value="deepseek_r1_qwen32b">DeepSeek R1 Distill Qwen 32B (GQA 5:1, 128K)</option>
+                <option value="llama3_70b">Llama 3.3 70B (GQA 8:1, 128K)</option>
+                <option value="phi4_mini">Phi-4 Mini 3.8B (GQA 3:1, 128K)</option>
                 <option value="custom">Custom Configuration</option>
               </select>
             </div>
@@ -1050,9 +1053,9 @@
             <div class="field">
               <div class="field-header">
                 <span class="field-label">Model Size</span>
-                <span class="field-value"><span id="params-val">8</span>B</span>
+                <span class="field-value"><span id="params-val">8.19</span>B</span>
               </div>
-              <input id="params" type="range" min="0.5" max="120" step="0.1" value="8">
+              <input id="params" type="range" min="0.5" max="120" step="0.01" value="8.19">
             </div>
 
             <div class="field">
@@ -1086,9 +1089,9 @@
               <div class="field">
                 <div class="field-header">
                   <span class="field-label">Layers (L)</span>
-                  <span class="field-value" id="layers-val">32</span>
+                  <span class="field-value" id="layers-val">36</span>
                 </div>
-                <input id="layers" type="range" min="8" max="128" step="1" value="32">
+                <input id="layers" type="range" min="8" max="128" step="1" value="36">
               </div>
               
               <div class="field">
@@ -1157,7 +1160,7 @@
                 <span class="field-label">Your Available VRAM</span>
                 <span class="field-value"><span id="vram-val">16</span> GB</span>
               </div>
-              <input id="vram" type="range" min="4" max="192" step="1" value="16">
+              <input id="vram" type="range" min="4" max="512" step="1" value="16">
             </div>
           </div>
 
@@ -1187,9 +1190,9 @@
               <div class="field">
                 <div class="field-header">
                   <span class="field-label">Cloud Price ($/hr)</span>
-                  <span class="field-value" id="hourly-val">0.85</span>
+                  <span class="field-value" id="hourly-val">0.99</span>
                 </div>
-                <input id="hourly" type="range" min="0.05" max="5.00" step="0.05" value="0.85">
+                <input id="hourly" type="range" min="0.05" max="6.00" step="0.01" value="0.99">
               </div>
               
               <div class="field">
@@ -1365,6 +1368,7 @@
     <!-- FOOTER -->
     <footer class="footer">
       <p>Estimates are mathematically modeled for standard local backends (llama.cpp, ExLlamaV2, vLLM). Actual runtime requirements can vary with context shifting, batch configurations, and specific engine flash-attention implementations.</p>
+      <p class="credit-line"><strong>Data refresh:</strong> Jun 2026 model architecture presets from public Hugging Face config/API metadata for Qwen3, DeepSeek R1 Distill, Mistral Small 3.2, Phi-4 Mini, and Meta Llama parameter counts. Hardware/rental cues refreshed from Apple Mac Studio specs, NVIDIA RTX 5090 specs, and RunPod public GPU pricing.</p>
       <p class="credit-line"><strong>Credit:</strong> formulas and fit-or-rent framing inspired by adidshaft’s <a href="https://x.com/adidshaft/status/2047312245290668440" target="_blank" rel="noopener noreferrer">Quick Estimator for LLM Fit-or-Rent Decisions</a> X article.</p>
       <p class="credit-line">Created with ✨ by <a href="https://agentcortex.space" target="_blank" rel="noopener noreferrer" style="color: var(--cyan); text-decoration: none; font-weight: 600;">Agent Cortex</a> · follow <a href="https://x.com/weekend__builds" target="_blank" rel="noopener noreferrer" style="color: var(--cyan); text-decoration: none; font-weight: 600;">@weekend__builds</a>.</p>
     </footer>
@@ -1393,33 +1397,38 @@
       'tokens', 'kvBytes', 'overhead', 'vram', 'tps', 'outTokens', 'hourly', 'runs'
     ];
 
-    // Local model presets database (includes key GQA attributes)
+    // Local model presets database (Jun 2026 refresh; includes GQA/MQA key-value-head attributes)
     const presets = {
-      llama3_8b: { params: 8.03, layers: 32, hidden: 4096, qHeads: 32, kvHeads: 8, name: "Llama 3 8B" },
-      llama3_70b: { params: 70.6, layers: 80, hidden: 8192, qHeads: 64, kvHeads: 8, name: "Llama 3 70B" },
-      mistral7b: { params: 7.24, layers: 32, hidden: 4096, qHeads: 32, kvHeads: 8, name: "Mistral 7B" },
-      gemma2_9b: { params: 9.24, layers: 42, hidden: 3584, qHeads: 16, kvHeads: 8, name: "Gemma 2 9B" },
-      phi3_mini: { params: 3.82, layers: 32, hidden: 3072, qHeads: 32, kvHeads: 32, name: "Phi 3 Mini" },
-      deepseek_6b: { params: 6.74, layers: 32, hidden: 4096, qHeads: 32, kvHeads: 8, name: "DeepSeek 6.7B" }
+      qwen3_8b: { params: 8.19, layers: 36, hidden: 4096, qHeads: 32, kvHeads: 8, name: "Qwen3 8B" },
+      llama3_8b: { params: 8.03, layers: 32, hidden: 4096, qHeads: 32, kvHeads: 8, name: "Llama 3.1 8B" },
+      qwen3_14b: { params: 14.77, layers: 40, hidden: 5120, qHeads: 40, kvHeads: 8, name: "Qwen3 14B" },
+      mistral_small_32_24b: { params: 24.01, layers: 40, hidden: 5120, qHeads: 32, kvHeads: 8, name: "Mistral Small 3.2 24B" },
+      qwen3_32b: { params: 32.76, layers: 64, hidden: 5120, qHeads: 64, kvHeads: 8, name: "Qwen3 32B" },
+      deepseek_r1_qwen32b: { params: 32.76, layers: 64, hidden: 5120, qHeads: 40, kvHeads: 8, name: "DeepSeek R1 Distill Qwen 32B" },
+      llama3_70b: { params: 70.55, layers: 80, hidden: 8192, qHeads: 64, kvHeads: 8, name: "Llama 3.3 70B" },
+      phi4_mini: { params: 3.84, layers: 32, hidden: 3072, qHeads: 24, kvHeads: 8, name: "Phi-4 Mini" }
     };
 
-    // Hardware parameters list (Local GPUs and unified Macs)
+    // Hardware parameters list (street/MSRP estimates; Mac unified memory uses conservative ~75% usable VRAM budget)
     const hardwareList = [
-      { name: "RTX 3060 12GB", vram: 12, cost: 290, type: "gpu" },
-      { name: "RTX 4060 Ti 16GB", vram: 16, cost: 440, type: "gpu" },
-      { name: "RTX 3090 24GB (Used)", vram: 24, cost: 750, type: "gpu" },
-      { name: "RTX 4090 24GB", vram: 24, cost: 1650, type: "gpu" },
-      { name: "Dual RTX 3090s 48GB", vram: 48, cost: 1500, type: "gpu" },
-      { name: "Mac Studio M2/M3 (64GB)*", vram: 48, cost: 2199, type: "mac" }, // Unified memory limit allocation rule (~75% max VRAM allocation)
-      { name: "Mac Studio M2/M3 (128GB)*", vram: 96, cost: 3999, type: "mac" },
+      { name: "RTX 3060 12GB", vram: 12, cost: 280, type: "gpu" },
+      { name: "RTX 4060 Ti 16GB", vram: 16, cost: 430, type: "gpu" },
+      { name: "RTX 4070 Ti SUPER 16GB", vram: 16, cost: 800, type: "gpu" },
+      { name: "RTX 3090 24GB (Used)", vram: 24, cost: 700, type: "gpu" },
+      { name: "RTX 4090 24GB", vram: 24, cost: 1700, type: "gpu" },
+      { name: "RTX 5090 32GB", vram: 32, cost: 1999, type: "gpu" },
+      { name: "Dual RTX 3090s 48GB", vram: 48, cost: 1400, type: "gpu" },
       { name: "RTX 6000 Ada 48GB", vram: 48, cost: 6800, type: "gpu" },
-      { name: "A100 Enterprise 80GB", vram: 80, cost: 10500, type: "gpu" }
+      { name: "A100 80GB", vram: 80, cost: 10000, type: "gpu" },
+      { name: "RTX PRO 6000 Blackwell 96GB", vram: 96, cost: 8500, type: "gpu" },
+      { name: "Mac Studio M3 Ultra 96GB*", vram: 72, cost: 3999, type: "mac", note: "~75% unified memory budget" },
+      { name: "Mac Studio M3 Ultra 512GB*", vram: 384, cost: 25000, type: "mac", note: "~75% unified memory budget" }
     ];
 
     const defaults = {
-      params: 8,
+      params: 8.19,
       precision: 4.8,
-      layers: 32,
+      layers: 36,
       hidden: 4096,
       qHeads: 32,
       kvHeads: 8,
@@ -1429,7 +1438,7 @@
       vram: 16,
       tps: 25,
       outTokens: 2000,
-      hourly: 0.85,
+      hourly: 0.99,
       runs: 300
     };
 
@@ -1632,11 +1641,19 @@
         // Custom name override if it's Mac Unified memory configuration
         let nameText = hw.name;
         
-        card.innerHTML = `
-          <div class="gpu-name">${nameText}</div>
-          <div class="gpu-vram">${hw.vram} GB GDDR / Unified</div>
-          <div class="gpu-price-tag">Estimated Hardware cost: ~$${hw.cost}</div>
-        `;
+        const gpuName = document.createElement('div');
+        gpuName.className = 'gpu-name';
+        gpuName.textContent = nameText;
+
+        const gpuVram = document.createElement('div');
+        gpuVram.className = 'gpu-vram';
+        gpuVram.textContent = `${hw.vram} GB ${hw.type === 'mac' ? 'usable unified' : 'VRAM'}`;
+
+        const gpuPrice = document.createElement('div');
+        gpuPrice.className = 'gpu-price-tag';
+        gpuPrice.textContent = `Estimated Hardware cost: ~$${hw.cost}${hw.note ? ` · ${hw.note}` : ''}`;
+
+        card.append(gpuName, gpuVram, gpuPrice);
         gpuGrid.appendChild(card);
       });
 
@@ -1646,7 +1663,9 @@
 
       // Dynamically calculate break-even point for hardware purchase
       // Find the best suited target local GPU
-      let fitCard = hardwareList.find(hw => hw.vram >= total);
+      let fitCard = hardwareList
+        .filter(hw => hw.vram >= total)
+        .sort((a, b) => a.cost - b.cost)[0];
       if (fitCard) {
         const monthsPayback = fitCard.cost / Math.max(costMonth, 0.0001);
         if (monthsPayback > 36) {
@@ -1704,7 +1723,7 @@
       Object.entries(defaults).forEach(([k,v]) => {
         $(k).value = v;
       });
-      $('modelPreset').value = 'llama3_8b';
+      $('modelPreset').value = 'qwen3_8b';
       $('architectureGroup').style.opacity = '0.7';
       calculate();
     });
@@ -1745,11 +1764,17 @@ Estimator compiled via: Local VRAM performance Planner.`;
         fields.forEach(f => {
           if (saved[f] !== undefined) $(f).value = saved[f];
         });
-        if (saved.modelPreset) {
+        if (saved.modelPreset && presets[saved.modelPreset]) {
           $('modelPreset').value = saved.modelPreset;
           if (saved.modelPreset !== 'custom') {
             $('architectureGroup').style.opacity = '0.7';
           }
+        } else if (saved.modelPreset) {
+          $('modelPreset').value = 'qwen3_8b';
+          Object.entries(presets.qwen3_8b).forEach(([key, value]) => {
+            if ($(key)) $(key).value = value;
+          });
+          $('architectureGroup').style.opacity = '0.7';
         }
       } catch {}
       calculate();
